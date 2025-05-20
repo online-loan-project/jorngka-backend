@@ -1,11 +1,18 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Borrower\FaceDetectionController;
 use App\Http\Middleware\BorrowerAccessMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('borrower')->middleware(['auth:sanctum', BorrowerAccessMiddleware::class])->group(function () {
     Route::get('me', [AuthController::class, 'me'])->name('borrower.me');
+
+    Route::post('/face', [FaceDetectionController::class, 'faceMatch'])->name('face-match');
+    //get nid image
+    Route::get('/nid-image', [App\Http\Controllers\Borrower\NidController::class, 'getLatestNidImage'])->name('get-latest-nid-image');
+    //get liveliness image
+    Route::get('/liveliness-image', [App\Http\Controllers\Borrower\NidController::class, 'getLatestLivelinessImage'])->name('get-latest-liveliness-image');
 
     Route::post('request-loan', [App\Http\Controllers\Borrower\RequestLoanController::class, 'store'])->name('request-loan');
     Route::get('request-loan', [App\Http\Controllers\Borrower\RequestLoanController::class, 'index'])->name('request-loan');

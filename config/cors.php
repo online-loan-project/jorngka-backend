@@ -1,8 +1,7 @@
 <?php
 
 return [
-
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'], // Added 'storage/*' if serving images
 
     'allowed_methods' => ['*'],
 
@@ -22,4 +21,3 @@ return [
     'supports_credentials' => true,
 
 ];
-
