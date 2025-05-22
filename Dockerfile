@@ -1,42 +1,73 @@
-FROM php:8.3-fpm
+FROM php:8.2-fpm
 
-# set your user name, ex: user=carlos
-ARG user=yourusername
-ARG uid=1000
+# Set arguments with default values
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG USER_NAME=laravel
 
-# Install system dependencies
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
+    libjpeg-dev \
+    libwebp-dev \
+    libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
+    libpq-dev \
+    libssl-dev \
+    unzip \
     zip \
-    unzip
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd sockets
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j$(nproc) \
+    pdo_mysql \
+    mbstring \
+    exif \
+    pcntl \
+    bcmath \
+    gd \
+    sockets \
+    zip \
+    opcache
+
+# Install Redis extension
+RUN pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /tmp/pear
+
+# Install Node.js (for frontend dependencies)
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create system user to run Composer and Artisan Commands
-RUN useradd -G www-data,root -u $uid -d /home/$user $user
-RUN mkdir -p /home/$user/.composer && \
-    chown -R $user:$user /home/$user
+# Create system user
+RUN groupadd --gid ${GROUP_ID} ${USER_NAME} \
+    && useradd --uid ${USER_ID} --gid ${GROUP_ID} -m ${USER_NAME} \
+    && usermod -aG www-data ${USER_NAME} \
+    && mkdir -p /home/${USER_NAME}/.composer \
+    && chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}
 
-# Install redis
-RUN pecl install -o -f redis \
-    &&  rm -rf /tmp/pear \
-    &&  docker-php-ext-enable redis
+# Configure PHP
+COPY docker/php/ /usr/local/etc/php/conf.d/
+RUN chown -R ${USER_NAME}:${USER_NAME} /usr/local/etc/php/conf.d
 
 # Set working directory
 WORKDIR /var/www
 
-# Copy custom configurations PHP
-COPY docker/php/custom.ini /usr/local/etc/php/conf.d/custom.ini
+# Set permissions
+RUN chown -R ${USER_NAME}:${USER_NAME} /var/www
 
-USER $user
+USER ${USER_NAME}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+    CMD php -r "exit(fsockopen('localhost', 9000) ? 0 : 1);"

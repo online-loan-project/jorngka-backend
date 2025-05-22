@@ -3,10 +3,12 @@
 namespace App\Traits;
 
 use Exception;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
 trait FaceComparison
 {
+    use UploadImage;
     private $faceDetectionModel;
     private $faceRecognitionModel;
     private $similarityThreshold = 0.75; // Increased threshold for stricter verification
@@ -66,13 +68,37 @@ trait FaceComparison
         // Determine verification status
         $verified = $similarity >= $this->similarityThreshold;
 
+        $face1Path = $this->saveFaceWithOverlay(
+            $image1Path,
+            $face1['bounding_box'],
+            $face1['landmarks'] ?? [],
+            'face1_overlay.png'
+        );
+        $face2Path = $this->saveFaceWithOverlay(
+            $image2Path,
+            $face2['bounding_box'],
+            $face2['landmarks'] ?? [],
+            'face2_overlay.png'
+        );
+
+// Upload to Laravel storage (e.g., public disk)
+        $face1StoragePath = Storage::disk('public')->putFile('faces', $face1Path);
+        $face2StoragePath = Storage::disk('public')->putFile('faces', $face2Path);
+
+// Clean up temp files
+        unlink($face1Path);
+        unlink($face2Path);
+
+
         return [
             'success' => true,
             'similarity' => $similarity,
             'verified' => $verified,
             'threshold' => $this->similarityThreshold,
             'face1' => $face1,
-            'face2' => $face2
+            'face2' => $face2,
+            'face1_url' => Storage::disk('public')->url($face1StoragePath),
+            'face2_url' => Storage::disk('public')->url($face2StoragePath)
         ];
     }
 
@@ -308,5 +334,74 @@ trait FaceComparison
                 return $embedding;
             }
         };
+    }
+    private function saveFaceWithOverlay($imagePath, $boundingBox, $landmarks, $filename)
+    {
+        // Load the original image
+        $image = $this->loadImage($imagePath);
+
+        // Create a semi-transparent overlay
+        $overlay = imagecreatetruecolor(imagesx($image), imagesy($image));
+        imagesavealpha($overlay, true);
+        $transparent = imagecolorallocatealpha($overlay, 0, 0, 0, 127);
+        imagefill($overlay, 0, 0, $transparent);
+
+        // Define colors
+        $boxColor = imagecolorallocate($overlay, 0, 255, 0); // Green for bounding box
+        $landmarkColor = imagecolorallocate($overlay, 255, 0, 0); // Red for landmarks
+        $textColor = imagecolorallocate($overlay, 255, 255, 255); // White for text
+
+        // Draw bounding box
+        $thickness = 3;
+        for ($i = 0; $i < $thickness; $i++) {
+            imagerectangle(
+                $overlay,
+                (int) $boundingBox['x'] + $i,
+                (int) $boundingBox['y'] + $i,
+                (int) ($boundingBox['x'] + $boundingBox['width']) - $i,
+                (int) ($boundingBox['y'] + $boundingBox['height']) - $i,
+                $boxColor
+            );
+        }
+
+        // Draw facial landmarks if available
+        if (!empty($landmarks)) {
+            $landmarkSize = 4;
+            foreach ($landmarks as $landmark) {
+                imagefilledellipse(
+                    $overlay,
+                    (int) $landmark['x'],
+                    (int) $landmark['y'],
+                    $landmarkSize,
+                    $landmarkSize,
+                    $landmarkColor
+                );
+            }
+
+            // Draw landmark connections (optional)
+            if (isset($landmarks['left_eye']) && isset($landmarks['right_eye'])) {
+                imageline(
+                    $overlay,
+                    (int) $landmarks['left_eye']['x'],
+                    (int) $landmarks['left_eye']['y'],
+                    (int) $landmarks['right_eye']['x'],
+                    (int) $landmarks['right_eye']['y'],
+                    $landmarkColor
+                );
+            }
+        }
+
+        // Merge overlay with original image
+        imagecopy($image, $overlay, 0, 0, 0, 0, imagesx($image), imagesy($image));
+
+        // Save to temporary file
+        $tempPath = sys_get_temp_dir() . '/' . uniqid() . '_' . $filename;
+        imagepng($image, $tempPath);
+
+        // Clean up resources
+        imagedestroy($image);
+        imagedestroy($overlay);
+
+        return $tempPath;
     }
 }

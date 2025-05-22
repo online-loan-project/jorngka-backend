@@ -80,16 +80,31 @@ class FaceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->failed($validator->errors(), 'Error', 'Validate Fail',422);
+            return $this->failed($validator->errors(), 'Error', 'Validate Fail', 422);
         }
 
         try {
-            // Store images temporarily
-            $idCardPath = $request->file('id_card_image')->store('temp-faces', 'public');
-            $selfiePath = $request->file('face_image')->store('temp-faces', 'public');
+            // Handle ID card image (could be file or URL)
+            if ($request->hasFile('id_card_image')) {
+                $idCardPath = $request->file('id_card_image')->store('temp-faces', 'public');
+                $fullIdCardPath = storage_path('app/public/' . $idCardPath);
+            } else {
+                // Handle URL case
+                $idCardUrl = $request->input('id_card_image');
+                $idCardPath = $this->downloadImageFromUrl($idCardUrl, 'temp-faces');
+                $fullIdCardPath = storage_path('app/public/' . $idCardPath);
+            }
 
-            $fullIdCardPath = storage_path('app/public/' . $idCardPath);
-            $fullSelfiePath = storage_path('app/public/' . $selfiePath);
+            // Handle face image (could be file or URL)
+            if ($request->hasFile('face_image')) {
+                $selfiePath = $request->file('face_image')->store('temp-faces', 'public');
+                $fullSelfiePath = storage_path('app/public/' . $selfiePath);
+            } else {
+                // Handle URL case
+                $selfieUrl = $request->input('face_image');
+                $selfiePath = $this->downloadImageFromUrl($selfieUrl, 'temp-faces');
+                $fullSelfiePath = storage_path('app/public/' . $selfiePath);
+            }
 
             // Compare faces
             $result = $this->compareFacesForEKYC($fullIdCardPath, $fullSelfiePath);
@@ -107,6 +122,7 @@ class FaceController extends Controller
                 'threshold_used' => $this->similarityThreshold,
                 'id_card_face' => $result['face1']['bounding_box'],
                 'face_photo' => $result['face2']['bounding_box'],
+                'result' => $result,
             ], 'Face comparison', 'Face comparison completed');
 
         } catch (\Exception $e) {
@@ -116,5 +132,28 @@ class FaceController extends Controller
             }
             return $this->failed($e->getMessage(),'Error', 'Error', 500);
         }
+    }
+
+    /**
+     * Download image from URL and store it in public storage
+     */
+    protected function downloadImageFromUrl($url, $directory)
+    {
+        // Extract the path after /storage/
+        $path = parse_url($url, PHP_URL_PATH);
+        $storagePath = str_replace('/storage/', '', $path);
+
+        // Check if file exists in storage
+        if (Storage::disk('public')->exists($storagePath)) {
+            $filename = pathinfo($storagePath, PATHINFO_BASENAME);
+            $newPath = $directory . '/' . $filename;
+
+            // Copy the file to temp location
+            Storage::disk('public')->copy($storagePath, $newPath);
+
+            return $newPath;
+        }
+
+        throw new \Exception("Image not found in storage");
     }
 }
