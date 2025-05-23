@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('phone')->unique();
             $table->timestamp('phone_verified_at')->nullable();
             $table->string('telegram_chat_id')->nullable();
+            $table->timestamp('face_verified_at')->nullable();
             $table->enum('role', [1, 2])->default(2);
             $table->enum('status', [1, 0])->default(1);
             $table->rememberToken();

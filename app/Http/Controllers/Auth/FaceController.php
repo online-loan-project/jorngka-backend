@@ -2,77 +2,27 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Constants\ConstUserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\Borrower;
+use App\Models\NidInformation;
+use App\Services\AwsFaceComparison;
 use App\Traits\FaceComparison;
+use App\Traits\OpenCV;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 
 class FaceController extends Controller
 {
-    use FaceComparison;
-
-    /**
-     * Initialize face comparison models when controller is instantiated
-     */
-    public function __construct()
-    {
-        $this->initFaceComparison();
-    }
-
-    /**
-     * Detect faces in a single image
-     */
-    public function detectFaces(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'image' => 'required', // Max 5MB
-        ]);
-
-        if ($validator->fails()) {
-            return $this->failed($validator->errors(), 'Face Detect', 'Face Detect Fail',422);
-        }
-
-        try {
-            // Store the image
-            $imagePath = $request->file('image')->store('temp-faces', 'public');
-            $fullPath = storage_path('app/public/' . $imagePath);
-
-            // Detect faces
-            $faceData = $this->detectAndAlignFace($fullPath);
-
-            if (!$faceData) {
-                return $this->failed(null, 'No faces detected in the image', 'No faces detected in the image', 400);
-            }
-
-            // Clean up temporary file
-            Storage::disk('public')->delete($imagePath);
-
-            return $this->success([
-                'face_count' => 1, // For single face detection
-                'faces' => [
-                    [
-                        'bounding_box' => $faceData['bounding_box'],
-                        'landmarks' => $faceData['landmarks'],
-                        'image_size' => getimagesize($fullPath),
-                    ]
-                ]
-            ], 'Face detection', 'Face detection completed');
-
-        } catch (\Exception $e) {
-            // Clean up if error occurs
-            if (isset($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
-            }
-            return $this->failed($e->getMessage(), 'Error', $e->getMessage());
-        }
-    }
 
     /**
      * Compare faces from two images for eKYC verification
      */
     public function compareFaces(Request $request)
     {
+        $user = auth()->user();
         $validator = Validator::make($request->all(), [
             'id_card_image' => 'required',
             'face_image' => 'required',
@@ -106,23 +56,44 @@ class FaceController extends Controller
                 $fullSelfiePath = storage_path('app/public/' . $selfiePath);
             }
 
-            // Compare faces
-            $result = $this->compareFacesForEKYC($fullIdCardPath, $fullSelfiePath);
+            $threshold = $request->input('min_similarity', 80);
+
+            $comparisonService = new AwsFaceComparison();
+            $result = $comparisonService->compareFaces($fullIdCardPath, $fullSelfiePath, $threshold, true);
 
             // Clean up files
             Storage::disk('public')->delete([$idCardPath, $selfiePath]);
 
-            if (!$result['success']) {
-                return $this->failed($result['message'], 'Error', 'Error', 400);
+            if ($result['verified']) {
+                // update face_verified_at user
+                $user->face_verified_at = now();
+                $user->save();
             }
 
+            $profile = null;
+            //check $user->role if admin or borrower so join the table
+            if ($user->role == ConstUserRole::BORROWER) {
+                $profile = Borrower::query()->where('user_id', $user->id)->first();
+            }
+
+            if ($user->role == ConstUserRole::ADMIN) {
+                $profile = Admin::query()->where('user_id', $user->id)->first();
+            }
+
+            //add $profile to user
+            $user->profile = $profile;
+            $user->role = (int) $user->role;
+            $user->status = (int) $user->status;
+
+            $nid_information = NidInformation::query()
+                ->where('user_id', $user->id)
+                ->where('status', 1)
+                ->first();
+
             return $this->success([
-                'verified' => $result['verified'],
-                'similarity_score' => round($result['similarity'], 4),
-                'threshold_used' => $this->similarityThreshold,
-                'id_card_face' => $result['face1']['bounding_box'],
-                'face_photo' => $result['face2']['bounding_box'],
+                'user' => $user,
                 'result' => $result,
+                'nid' => $nid_information
             ], 'Face comparison', 'Face comparison completed');
 
         } catch (\Exception $e) {

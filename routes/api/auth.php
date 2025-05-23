@@ -17,8 +17,6 @@ Route::prefix('nid-verify')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [App\Http\Controllers\Borrower\NidController::class, 'show'])->name('nid-verify');
 });
 
-Route::post('face', [FaceController::class, 'compareFaces'])->name('compareFaces');
-
 //update profile
 Route::post('profile/update', [AuthController::class, 'updateProfile'])->middleware('auth:sanctum')->name('updateProfile');
 
