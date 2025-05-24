@@ -8,6 +8,27 @@ trait OCR
 {
     public function extractOcrData($imageFile)
     {
+        $image = imagecreatefromstring(file_get_contents($imageFile));
+        if ($image === false) {
+            throw new \Exception('Failed to create image from string');
+        }
+
+        // Convert to grayscale
+        imagefilter($image, IMG_FILTER_GRAYSCALE);
+
+        // Enhance contrast - adjust value as needed (try values between -50 to -100)
+        imagefilter($image, IMG_FILTER_CONTRAST, -80);
+
+        // Optional: Apply brightness adjustment if needed
+        // imagefilter($image, IMG_FILTER_BRIGHTNESS, 20);
+
+        // Save the processed image
+        $processedImagePath = tempnam(sys_get_temp_dir(), 'ocr_') . '.png';
+        imagepng($image, $processedImagePath);
+
+        // Free memory
+        imagedestroy($image);
+
         // Process OCR with Tesseract
         $ocrText = (new TesseractOCR($imageFile))
             ->lang('eng+khm')  // Ensure Khmer is also included
@@ -39,6 +60,9 @@ trait OCR
         }
 
         logger('Scan : ', $data);
+
+        // Clean up temporary file
+        unlink($processedImagePath);
         return $data;
     }
 }

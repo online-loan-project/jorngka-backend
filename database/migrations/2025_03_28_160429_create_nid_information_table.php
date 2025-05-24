@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('nid_information', function (Blueprint $table) {
             $table->id();
+            //user_id
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->string('nid_number');
             //image
             $table->string('nid_image');
             //status
             $table->enum('status', [1,0])->default(0);
-            $table->unsignedBigInteger('request_loan_id');
+            $table->unsignedBigInteger('request_loan_id')->nullable();
             $table->timestamps();
         });
     }

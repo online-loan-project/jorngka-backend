@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class NidInformation extends Model
 {
     //
-    protected $fillable = ['nid_number', 'nid_image', 'status', 'request_loan_id'];
+    protected $fillable = ['nid_number', 'nid_image', 'status', 'request_loan_id', 'user_id'];
     //relationship to request_loan
     public function requestLoan()
     {

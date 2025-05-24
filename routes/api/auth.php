@@ -1,14 +1,21 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\FaceController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Borrower\FaceDetectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthController::class, 'Login'])->name('login');
 Route::post('register', [AuthController::class, 'Register'])->name('register');
-Route::post('liveliness', [AuthController::class, 'liveliness'])->middleware('auth:sanctum')->name('liveliness');
 Route::get('send/code', [AuthController::class, 'sendVerify'])->middleware('auth:sanctum')->name('sendVerify');
 Route::post('verify/code', [AuthController::class, 'verifyOTP'])->middleware('auth:sanctum')->name('verifyCode');
+
+Route::post('liveliness', [AuthController::class, 'liveliness'])->middleware('auth:sanctum')->name('liveliness');
+Route::prefix('nid-verify')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [App\Http\Controllers\Borrower\NidController::class, 'store'])->name('nid-verify');
+    Route::get('/', [App\Http\Controllers\Borrower\NidController::class, 'show'])->name('nid-verify');
+});
 
 //update profile
 Route::post('profile/update', [AuthController::class, 'updateProfile'])->middleware('auth:sanctum')->name('updateProfile');

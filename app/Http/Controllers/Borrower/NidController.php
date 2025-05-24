@@ -5,21 +5,23 @@ namespace App\Http\Controllers\Borrower;
 use App\Constants\ConstRequestLoanStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Borrower;
+use App\Models\Liveliness;
 use App\Models\NidInformation;
 use App\Models\RequestLoan;
+use App\Traits\BaseApiResponse;
 use App\Traits\TelegramNotification;
 use Illuminate\Http\Request;
 
 class NidController extends Controller
 {
-    use TelegramNotification;
+    use TelegramNotification, BaseApiResponse;
 
     // store nid information
     public function store(Request $request)
     {
         // Validate the request
         $request->validate([
-            'nid_image' => 'required',
+            'nid_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         $userData = auth()->user(); // Get the authenticated user
@@ -84,7 +86,7 @@ MSG);
         // match the extracted data with the borrower data only first_name, last_name
         if (strtolower($data['first_name']) !== strtolower($borrowerData->first_name) || strtolower($data['last_name']) !== strtolower($borrowerData->last_name)) {
 
-            return $this->failed(null ,'NID Error','NID information does not match with the borrower data.', null, 422);
+            return $this->failed(null ,'NID Error','NID information does not match with the borrower data.', 422);
         }
 
         $image = $request->file('nid_image');
@@ -100,6 +102,7 @@ MSG);
             'nid_image' => $imagePath,
             'status' => 1,
             'request_loan_id' => 0,
+            'user_id' => $userData->id,
         ]);
 
         //$nidInformation first name last name
@@ -120,5 +123,37 @@ MSG);
             return $this->failed('NID information not found', 404);
         }
         return $this->success($nidInformation, 'NID information retrieved successfully.');
+    }
+
+    //get latest nid image
+    public function getLatestNidImage(Request $request)
+    {
+        $user = auth()->user();
+        $nidInformation = NidInformation::query()
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$nidInformation) {
+            return $this->failed('NID information not found', 404);
+        }
+
+        return $this->success($nidInformation, 'NID information retrieved successfully.');
+    }
+
+    //getLatestLivelinessImage
+    public function getLatestLivelinessImage(Request $request)
+    {
+        $user = auth()->user();
+        $liveliness = Liveliness::query()
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$liveliness) {
+            return $this->failed(null, 'NID information not found','NID information not found', 404);
+        }
+
+        return $this->success($liveliness, 'Liveliness', 'Liveliness information retrieved successfully.');
     }
 }

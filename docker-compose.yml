@@ -1,0 +1,113 @@
+version: "3.7"
+
+services:
+    # Laravel application
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                - USER_ID=${USER_ID:-1000}
+                - GROUP_ID=${GROUP_ID:-1000}
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+        environment:
+            - APP_ENV=production
+            - APP_DEBUG=true
+        networks:
+            - laravel
+        depends_on:
+            - db
+            - redis
+
+    # Web server
+    webserver:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "8989:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx:/etc/nginx/conf.d
+        networks:
+            - laravel
+        depends_on:
+            - app
+
+    # Database
+    db:
+        image: mysql:8.0
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+            MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+            MYSQL_USER: ${DB_USERNAME:-laravel}
+        volumes:
+            - ./.docker/mysql/dbdata:/var/lib/mysql
+        ports:
+            - "3388:3306"
+        networks:
+            - laravel
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-secret}"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+
+    # PHPMyAdmin
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        restart: unless-stopped
+        ports:
+            - "8080:80"
+        environment:
+            PMA_HOST: db
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+        depends_on:
+            - db
+        networks:
+            - laravel
+
+    # Redis
+    redis:
+        image: redis:alpine
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - ./.docker/redis/data:/data
+        networks:
+            - laravel
+
+    # Optional: Queue worker
+    queue:
+        build: .
+        command: php artisan queue:work
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - app
+            - redis
+        networks:
+            - laravel
+
+    scheduler:
+        build: .
+        command: bash -c "while [ true ]; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - app
+        networks:
+            - laravel
+
+networks:
+    laravel:
+        driver: bridge
