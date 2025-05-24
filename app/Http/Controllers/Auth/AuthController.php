@@ -220,7 +220,7 @@ class AuthController extends Controller
 
         foreach ($images as $image) {
             $imagePath = $this->uploadImage($image, 'liveliness', 'public');
-            $imagePaths[] = $imagePath;
+            logger($imagePath);
 
             // Store each image immediately after upload
             Liveliness::create([
