@@ -15,10 +15,6 @@ class RequestLoanRequest extends FormRequest
             'loan_duration' => ['required', 'integer', 'between:1,12'],
             'loan_type' => ['required', 'string'],
 
-            //nid_information
-            'nid_number' => ['required', 'numeric'],
-            'nid_image' => ['nullable'],
-
             //income_information
             'employee_type' => ['required'],
             'position' => ['required'],

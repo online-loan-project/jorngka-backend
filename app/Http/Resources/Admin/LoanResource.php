@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,28 +20,26 @@ class LoanResource extends JsonResource
             'revenue' => $this->revenue,
             'loan_duration' => $this->loan_duration,
             'loan_repayment' => $this->loan_repayment,
-            'status' => $this->status,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'status' => (int)$this->status,
+            'created_at' => Carbon::parse($this->created_at)->format('Y-m-d H:i:s'),
             'email' => $this?->user?->email ?? null,
             'phone' => $this?->user?->phone ?? null,
             'name' => $this?->user?->borrower?->first_name . ' ' . $this?->user?->borrower?->last_name ?? null,
             'image' => $this?->user?->borrower?->image ?? null,
 
             'user' => [
-                'id' => $this?->user?->id,
                 'email' => $this?->user?->email,
                 'name' => $this?->user?->borrower?->first_name . ' ' . $this?->user?->borrower?->last_name ?? null,
                 'phone' => $this?->user?->phone,
-                'borrower_id' => $this?->user?->borrower?->id,
             ],
 
             'schedule_repayments' => $this?->scheduleRepayment->map(function ($repayment) {
                 return [
                     'id' => $repayment->id,
-                    'repayment_date' => $repayment?->repayment_date,
+                    'repayment_date' => Carbon::parse($repayment?->repayment_date)->format('Y-m-d H:i:s'),
                     'emi_amount' => $repayment?->emi_amount,
-                    'status' => $repayment?->status,
-                    'paid_date' => $repayment?->paid_date,
+                    'status' => (int)$repayment?->status,
+                    'paid_date' => Carbon::parse($repayment?->paid_date)->format('Y-m-d H:i:s'),
                 ];
             })->toArray(),
         ];

@@ -29,7 +29,6 @@ class RequestLoanResource extends JsonResource
             'nid_information' => [
                 'nid_number' => $this->nidInformation?->nid_number, // Maps to "101412140"
                 'nid_image' => $this->nidInformation?->nid_image, // Maps to URL
-                'nid_back_image' => $this->nidInformation?->nid_back_image, // Not present in JSON (would be null)
             ],
 
             'income_information' => [
