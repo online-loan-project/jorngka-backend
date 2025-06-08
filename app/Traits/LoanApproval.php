@@ -1,20 +1,20 @@
 <?php
+
 namespace App\Traits;
-use App\Constants\ConstLoanRepaymentStatus;
-use App\Constants\ConstLoanStatus;
+
+use App\Constants\ConstCreditTransaction;
 use App\Constants\ConstRequestLoanStatus;
 use App\Models\CreditScore;
 use App\Models\InterestRate;
 use App\Models\Loan;
 use App\Models\RequestLoan;
-use App\Models\ScheduleRepayment;
 use App\Models\User;
-use PhpParser\Node\Stmt\Trait_;
 
-Trait LoanApproval
+trait LoanApproval
 {
-    use TelegramNotification;
-    public function approveLoan($requestLoanId)
+    use TelegramNotification, CreditActivity, EMI;
+
+    public function approveLoan($requestLoanId, $request)
     {
 
         // Find the loan request by ID
@@ -33,7 +33,6 @@ Trait LoanApproval
         if (!$userCredit) {
             return 'Credit information not found';
         }
-        $creditScore = $userCredit->score;
 
         //interest rate check the latest one
         $interestRate = InterestRate::query()->latest()->first();
@@ -56,6 +55,8 @@ Trait LoanApproval
         //create the schedule repayment
         $this->createScheduleRepayment($loan->id);
         //update the request loan status
+        //approved_amount
+        $requestLoan->approved_amount = $requestLoan->loan_amount;
         $requestLoan->status = ConstRequestLoanStatus::APPROVED;
         $requestLoan->save();
         $chatId = User::query()->where('id', $requestLoan->user_id)->first();
@@ -77,33 +78,17 @@ Please check your account for details. The repayment schedule has been created a
 Thank you for choosing our service.
 MSG
         );
+
+        //log the credit activity
+        $this->recordTransaction(
+            $request,
+            $requestLoan->user_id,
+            $requestLoan->loan_amount,
+            ConstCreditTransaction::TYPE_LOAN_DISBURSEMENT,
+            'Loan approved for request ID: ' . $requestLoan->id,
+            'loan_' . $loan->id
+        );
+
         return 'Loan approved successfully';
     }
-
-
-    //calculate the loan repayment amount
-    private function calculateLoanRepayment($loanAmount, $interestRate, $loanDuration)
-    {
-        // Convert annual interest rate to monthly and decimal
-        $monthlyInterestRate = ($interestRate / 100) / 12;
-        $emi = ($loanAmount * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $loanDuration)) / (pow(1 + $monthlyInterestRate, $loanDuration) - 1);
-        return round($emi*$loanDuration, 2);
-    }
-    //create the schedule repayment
-    private function createScheduleRepayment($loanId)
-    {
-        $loan = Loan::find($loanId);
-        if (!$loan) {
-            return 'Loan not found';
-        }
-        $emiAmount = $loan->loan_repayment / $loan->loan_duration;
-        for ($i = 1; $i <= $loan->loan_duration; $i++) {
-            ScheduleRepayment::create([
-                'repayment_date' => now()->addMonths($i),
-                'emi_amount' => $emiAmount,
-                'loan_id' => $loan->id,
-            ]);
-        }
-    }
-
 }

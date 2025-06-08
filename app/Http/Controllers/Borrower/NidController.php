@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Borrower;
 
-use App\Constants\ConstRequestLoanStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Borrower;
 use App\Models\Liveliness;
 use App\Models\NidInformation;
-use App\Models\RequestLoan;
 use App\Traits\BaseApiResponse;
 use App\Traits\TelegramNotification;
 use Illuminate\Http\Request;
+use App\Services\CambodianNIDService;
 
 class NidController extends Controller
 {
@@ -19,6 +18,8 @@ class NidController extends Controller
     // store nid information
     public function store(Request $request)
     {
+        $nidService = new CambodianNIDService();
+
         // Validate the request
         $request->validate([
             'nid_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
@@ -31,7 +32,8 @@ class NidController extends Controller
             return $this->failed(null,'Image Error', 'Invalid image file.', 422);
         }
 
-        $data = $this->extractOcrData($request->file('nid_image')); // Extract OCR data
+        $data = $nidService->extractTextFromNID($request->file('nid_image')); // Process the NID image
+        logger('NID Information:', $data);
 
         // if $data no nid number
         if (empty($data['nid'])) {
@@ -95,7 +97,6 @@ MSG);
             $imagePath = $this->uploadImage($image, 'nid_info', 'public');
         }
 
-        logger('NID Information:', $data);
         // store nid number in the database
         $nidInformation = NidInformation::query()->create([
             'nid_number' => $data['nid'],

@@ -46,4 +46,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', AdminAccessMiddleware::class
     });
     //dashboard
     Route::get('dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard.index');
+
+    //credit management
+    Route::prefix('credit')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\CreditController::class, 'index'])->name('credit.index');
+        Route::post('/deposit', [App\Http\Controllers\Admin\CreditController::class, 'deposit'])->middleware([VerifyPassword::class])->name('credit.deposit');
+        Route::post('/withdraw', [App\Http\Controllers\Admin\CreditController::class, 'withdraw'])->middleware([VerifyPassword::class])->name('credit.withdraw');
+    });
 });

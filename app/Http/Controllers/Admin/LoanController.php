@@ -100,9 +100,9 @@ class LoanController extends Controller
        return $this->success($this->markedAsUnpaid($id));
     }
     //repayment Mark as paid
-    public function repaymentMarkAsPaid($id)
+    public function repaymentMarkAsPaid($id, Request $request)
     {
-        return $this->success($this->markedAsPaid($id));
+        return $this->success($this->markedAsPaid($id, $request));
     }
 
 }

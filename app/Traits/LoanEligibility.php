@@ -5,6 +5,7 @@ namespace App\Traits;
 
 use App\Constants\ConstRequestLoanStatus;
 use App\Models\Borrower;
+use App\Models\Credit;
 use App\Models\CreditScore;
 use App\Models\IncomeInformation;
 use App\Models\RequestLoan;
@@ -101,6 +102,33 @@ MSG);
             $this->checkRequestLoanNotEligible($userId, $requestLoanId, 'Credit information not found');
             return 'Credit information not found';
         }
+
+        //check system credit balance
+        $credit = Credit::query()
+            ->where('is_active', true)
+            ->first();
+
+        // compare if $requestLoan->loan_amount it bigger that credit balance it fail
+        if ($requestLoan->loan_amount > $credit->balance) {
+            $this->sendTelegram(
+                $user->telegram_chat_id,
+                <<<MSG
+🏦 Loan Not Eligibility Notification
+
+❌  Eligibility Check Not Complete
+
+▫️ Requested Amount: {$requestLoan->loan_amount} $
+
+💡 Reason : Requested amount exceeds available credit balance
+
+📞 Contact support if you have any questions.
+
+This is an automated message.
+MSG);
+            $this->checkRequestLoanNotEligible($userId, $requestLoanId, 'Requested amount exceeds available credit balance');
+            return 'Credit information not found';
+        };
+
 
 //      more logic here example :
 //       1. Age (must be above a minimum threshold, e.g., 21-60 years) If age < 21 or age > 60: Not Eligible

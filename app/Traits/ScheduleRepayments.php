@@ -1,5 +1,6 @@
 <?php
 namespace App\Traits;
+use App\Constants\ConstCreditTransaction;
 use App\Constants\ConstLoanRepaymentStatus;
 use App\Constants\ConstLoanStatus;
 use App\Constants\ConstRequestLoanStatus;
@@ -12,7 +13,8 @@ use Carbon\Carbon;
 
 Trait ScheduleRepayments
 {
-    public function MarkedAsPaid($scheduleRepaymentId)
+    use CreditActivity;
+    public function MarkedAsPaid($scheduleRepaymentId, $request)
     {
         // Find the schedule repayment by ID
         $scheduleRepayment = ScheduleRepayment::find($scheduleRepaymentId);
@@ -56,6 +58,16 @@ Trait ScheduleRepayments
                 $loan->save();
             }
         }
+
+        // Record the transaction for the credit activity
+        $this->recordTransaction(
+            $request,
+            $scheduleRepayment->loan->user_id,
+            $scheduleRepayment->amount,
+            ConstCreditTransaction::TYPE_LOAN_REPAYMENT,
+            'Loan repayment for schedule ID: ' . $scheduleRepayment->id,
+            'repayment_' . $scheduleRepayment->id
+        );
 
         return 'Schedule repayment marked as paid successfully';
     }

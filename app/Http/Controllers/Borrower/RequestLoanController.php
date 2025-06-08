@@ -33,12 +33,6 @@ class RequestLoanController extends Controller
             return $this->failed(null,'Already have loan', 'You already have a eligible request', 400);
         }
 
-        $nid_image = $request->file('nid_image');
-        $nid_image_path = null;
-        if ($nid_image) {
-            $nid_image_path = $this->uploadImage($nid_image, 'nid_info', 'public');
-        }
-
         $bank_statement = $request->file('bank_statement');
         $bank_statement_path = null;
         if ($bank_statement) {
@@ -50,13 +44,6 @@ class RequestLoanController extends Controller
             'loan_type' => $request->loan_type,
             'status' => 'pending',
             'user_id' => $user->id
-        ]);
-
-        $nidInformation = NidInformation::query()->create([
-            'nid_number' => $request->nid_number,
-            'nid_image' => $nid_image_path,
-            'status' => 1,
-            'request_loan_id' => $requestLoan->id
         ]);
 
         $incomeInformation = IncomeInformation::query()->create([
@@ -76,7 +63,6 @@ class RequestLoanController extends Controller
 
         $data = [
             'request_loan' => $requestLoan,
-            'nid_information' => $nidInformation,
             'income_information' => $incomeInformation,
             'eligibility' => $eligibility,
         ];

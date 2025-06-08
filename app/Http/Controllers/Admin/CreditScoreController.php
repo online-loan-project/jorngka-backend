@@ -14,13 +14,16 @@ class CreditScoreController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // show list user with credit score
+        $search = $request->query('search', null);
         $user = CreditScore::query()
             ->with(['user.borrower'])
-            ->whereHas('user', function($query) {
-                $query->where('role', '!=', 1);
+            ->whereHas('user', function($query) use ($search) {
+                $query->where('role', '!=', 1)
+                    ->when($search, function ($query, $search) {
+                        $query->where('id', 'like', '%' . $search . '%');
+                    });
             })
             ->get();
 
@@ -67,7 +70,7 @@ class CreditScoreController extends Controller
         $creditScore = CreditScore::query()->where('user_id', $id)->first();
         if ($creditScore) {
             $creditScore->score = $request->score;
-            $creditScore->status = $request->status;
+            $creditScore->status = (bool)$request->status;
             $creditScore->save(); //save the updated credit score
             return $this->success($creditScore);
         }

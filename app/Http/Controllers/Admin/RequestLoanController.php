@@ -14,8 +14,8 @@ use Illuminate\Http\Request;
 
 class RequestLoanController extends Controller
 {
-    Use LoanApproval;
-    Use LoanReject;
+    use LoanApproval;
+    use LoanReject;
 
     // Request loan list
     public function index(Request $request)
@@ -111,6 +111,7 @@ class RequestLoanController extends Controller
         }
         return $this->failed('Request loan not found', 404);
     }
+
     // Request loan eligibility list
     public function eligibilityList(Request $request)
     {
@@ -123,11 +124,13 @@ class RequestLoanController extends Controller
             ->paginate($perPage);
         return $this->success($requestLoan);
     }
+
     // Request loan approve
-    public function approve($id)
+    public function approve($id, Request $request)
     {
-            return $this->success($this->approveLoan($id));
+        return $this->success($this->approveLoan($id, $request));
     }
+
     // Request loan reject
     public function reject($id, RejectReasonRequest $request)
     {
