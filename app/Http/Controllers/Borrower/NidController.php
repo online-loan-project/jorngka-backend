@@ -10,6 +10,8 @@ use App\Traits\BaseApiResponse;
 use App\Traits\TelegramNotification;
 use Illuminate\Http\Request;
 use App\Services\CambodianNIDService;
+use Illuminate\Support\Facades\Log;
+use Intervention\Image\Image;
 
 class NidController extends Controller
 {
@@ -31,9 +33,19 @@ class NidController extends Controller
         if (!$request->file('nid_image')) {
             return $this->failed(null,'Image Error', 'Invalid image file.', 422);
         }
+        $optimizedImage = $this->optimizeImage($request->file('nid_image'));
 
-        $data = $nidService->extractTextFromNID($request->file('nid_image')); // Process the NID image
-        logger('NID Information:', $data);
+        $data = $nidService->extractTextFromNID($optimizedImage); // Process the NID image
+        Log::channel('nid_log')->info(
+            'NID Information',
+            [
+                'user_id' => $userData->id,
+                'nid_number' => $data['nid'] ?? null,
+                'first_name' => $data['first_name'] ?? null,
+                'last_name' => $data['last_name'] ?? null,
+                'image_path' => $request->file('nid_image')->store('nid_images', 'public'),
+            ]
+        );
 
         // if $data no nid number
         if (empty($data['nid'])) {
@@ -157,4 +169,66 @@ MSG);
 
         return $this->success($liveliness, 'Liveliness', 'Liveliness information retrieved successfully.');
     }
+
+    protected function optimizeImage($image)
+    {
+        // Define max file size in bytes (1024KB)
+        $maxSize = 1024 * 1024;
+
+        // Get image info
+        $imageInfo = getimagesize($image);
+        $mime = $imageInfo['mime'];
+
+        // Create image resource based on MIME type
+        switch ($mime) {
+            case 'image/jpeg':
+                $img = imagecreatefromjpeg($image);
+                break;
+            case 'image/png':
+                $img = imagecreatefrompng($image);
+                break;
+            default:
+                throw new \Exception('Unsupported image type');
+        }
+
+        // Get original dimensions
+        $width = imagesx($img);
+        $height = imagesy($img);
+
+        // Resize if too large (e.g., max width 1200px)
+        $maxWidth = 1200;
+        if ($width > $maxWidth) {
+            $ratio = $maxWidth / $width;
+            $newWidth = $maxWidth;
+            $newHeight = (int)($height * $ratio);
+
+            $resized = imagecreatetruecolor($newWidth, $newHeight);
+            imagecopyresampled($resized, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+            imagedestroy($img); // Free original image memory
+            $img = $resized;
+        }
+
+        // Try reducing quality to get under 1MB
+        $tempPath = sys_get_temp_dir() . '/' . uniqid() . '.jpg';
+        $quality = 90;
+
+        do {
+            imagejpeg($img, $tempPath, $quality);
+            $fileSize = filesize($tempPath);
+            $quality -= 5;
+        } while ($fileSize > $maxSize && $quality > 10);
+
+        imagedestroy($img); // Free resized image memory
+
+        logger($fileSize);
+        // Return the optimized image as an UploadedFile
+        return new \Illuminate\Http\UploadedFile(
+            $tempPath,
+            $image->getClientOriginalName(),
+            null,
+            null,
+            true // Mark it as a test file so Laravel doesn't move it again
+        );
+    }
+
 }

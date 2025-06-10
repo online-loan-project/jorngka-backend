@@ -34,7 +34,7 @@ return new class extends Migration
             $table->string('reference')->nullable()->comment('External reference number');
             $table->text('description')->nullable();
             $table->decimal('balance_after', 15, 2)->comment('Balance after this transaction');
-            $table->decimal('outstanding_after', 15, 2)->default(0)->comment('Outstanding loans after');
+            $table->decimal('balance_before', 15, 2)->default(0)->comment('Balance before this transaction');
 
             // Transaction chain reference
             $table->unsignedBigInteger('previous_transaction_id')->nullable()->comment('Previous transaction in sequence');

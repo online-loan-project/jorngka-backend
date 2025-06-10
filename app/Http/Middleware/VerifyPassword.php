@@ -23,7 +23,7 @@ class VerifyPassword
         $user = Auth::user();
 
         if (!$user || !password_verify($request->input('password'), $user->password)) {
-            return $this->failed(null, 'Password Required', 'Please Input Password',Response::HTTP_UNAUTHORIZED);
+            return $this->failed(null, 'Password Required', 'Please Input Password or Retry',Response::HTTP_UNAUTHORIZED);
         }
 
         return $next($request);

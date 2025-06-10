@@ -57,9 +57,15 @@ class CreditController extends Controller
             'credit' => [
                 'id' => $credit->id,
                 'balance' => $credit->balance,
+                'formatted_balance' => $credit->formatted_balance ?? number_format($credit->balance, 2), // Added formatted balance
                 'currency' => $credit->currency,
                 'last_transaction_at' => Carbon::parse($credit->last_transaction_at)->toDateTimeString(),
+                'created_at' => Carbon::parse($credit->created_at)->toDateTimeString(), // Added created at
+                'updated_at' => Carbon::parse($credit->updated_at)->toDateTimeString(), // Added updated at
                 'is_active' => $credit->is_active,
+                'total_transactions' => $credit->transactions()->count(), // Added total transactions count
+                'total_deposits' => $credit->transactions()->whereIn('type', [ConstCreditTransaction::TYPE_ADMIN_DEPOSIT, ConstCreditTransaction::TYPE_LOAN_REPAYMENT])->sum('amount'), // Added total deposits
+                'total_withdrawals' => $credit->transactions()->whereIn('type', [ConstCreditTransaction::TYPE_ADMIN_WITHDRAWAL, ConstCreditTransaction::TYPE_LOAN_DISBURSEMENT])->sum('amount'), // Added total withdrawals
             ],
             'transactions' => $transactions->map(function ($transaction) {
                 return [
@@ -104,7 +110,7 @@ class CreditController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'description' => 'nullable|string|max:255',
+            'description' => 'required|string|max:255',
         ]);
 
         $credit = Credit::query()
@@ -143,7 +149,7 @@ class CreditController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'description' => 'nullable|string|max:255',
+            'description' => 'required|string|max:255',
         ]);
 
         $credit = Credit::query()

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Constants\ConstUserRole;
 use App\Constants\ConstUserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Borrower;
@@ -23,6 +24,8 @@ class BorrowerController extends Controller
         $borrowerQuery = Borrower::query()
             ->with(['user'])
             ->whereHas('user', function ($query) use ($search) {
+                //check if user role is admin exclude them from the list
+                $query->where('role', '!=', ConstUserRole::ADMIN);
                 if ($search) {
                     $query->where('phone', 'like', '%' . $search . '%');
                 }

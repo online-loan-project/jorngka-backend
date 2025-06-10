@@ -22,15 +22,17 @@ trait EMI
 
     private function createScheduleRepayment($loanId)
     {
-        $loan = Loan::find($loanId);
+        $loan = Loan::query()
+            ->with(['creditScore', 'interestRate', 'requestLoan'])
+            ->find($loanId);
         if (!$loan) {
             return 'Loan not found';
         }
 
         // Calculate monthly payment with flat interest
         $emiAmount = $this->calculateLoanRepayment(
-            $loan->loan_amount,
-            $loan->interest_rate, // Monthly rate (e.g., 1.5 for 1.5%)
+            $loan->requestLoan->loan_amount,
+            $loan->interestRate->rate,
             $loan->loan_duration
         );
 
@@ -39,7 +41,7 @@ trait EMI
             ScheduleRepayment::create([
                 'repayment_date' => now()->addMonths($i),
                 'emi_amount' => $emiAmount,
-                'loan_id' => $loan->id,
+                'loan_id' => $loanId,
             ]);
         }
 

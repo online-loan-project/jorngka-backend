@@ -127,7 +127,7 @@ class CreditTransaction extends Model
 
     public function getFormattedAmountAttribute(): string
     {
-        $sign = $this->isDeposit() || $this->isDisbursement() ? '+' : '-';
+        $sign = $this->isWithdrawal() || $this->isDisbursement() ? '-' : '+';
         return $sign . number_format($this->amount, 2);
     }
 

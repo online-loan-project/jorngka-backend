@@ -18,10 +18,11 @@ class LoanResource extends JsonResource
         return [
             'id' => $this->id,
             'revenue' => $this->revenue,
+            'interest_monthly' => $this->revenue / $this->loan_duration ?? null,
             'loan_duration' => $this->loan_duration,
             'loan_repayment' => $this->loan_repayment,
             'status' => (int)$this->status,
-            'created_at' => Carbon::parse($this->created_at)->format('Y-m-d H:i:s'),
+            'created_at' => Carbon::parse($this->created_at)->format('Y-M-d H:i:s'),
             'email' => $this?->user?->email ?? null,
             'phone' => $this?->user?->phone ?? null,
             'name' => $this?->user?->borrower?->first_name . ' ' . $this?->user?->borrower?->last_name ?? null,
@@ -36,10 +37,10 @@ class LoanResource extends JsonResource
             'schedule_repayments' => $this?->scheduleRepayment->map(function ($repayment) {
                 return [
                     'id' => $repayment->id,
-                    'repayment_date' => Carbon::parse($repayment?->repayment_date)->format('Y-m-d H:i:s'),
+                    'repayment_date' => Carbon::parse($repayment?->repayment_date)->format('Y-M-d H:i:s'),
                     'emi_amount' => $repayment?->emi_amount,
                     'status' => (int)$repayment?->status,
-                    'paid_date' => Carbon::parse($repayment?->paid_date)->format('Y-m-d H:i:s'),
+                    'paid_date' => Carbon::parse($repayment?->paid_date)->format('Y-M-d H:i:s'),
                 ];
             })->toArray(),
         ];

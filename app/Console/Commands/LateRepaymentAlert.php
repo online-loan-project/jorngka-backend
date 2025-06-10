@@ -9,6 +9,7 @@ use App\Traits\ScheduleRepayments;
 use App\Traits\TelegramNotification;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class LateRepaymentAlert extends Command
 {
@@ -37,7 +38,10 @@ class LateRepaymentAlert extends Command
 
         // Get repayments that are past due and still unpaid
         $lateRepayments = ScheduleRepayment::with(['loan.user'])
-            ->where('status', ConstLoanRepaymentStatus::UNPAID)
+            ->whereIn('status', [
+                ConstLoanRepaymentStatus::UNPAID,
+                ConstLoanRepaymentStatus::LATE,
+            ])
             ->where('repayment_date', '<', $now)
             ->get();
 
@@ -53,6 +57,15 @@ class LateRepaymentAlert extends Command
             }
         }
 
+        $now = now()->format('Y-m-d H:i:s');
+        Log::channel('late_repayment')->info(
+            "Late repayment alert executed at {$now}. Notified {$notifiedCount} users :",
+            [
+                'notified_user_id' => $lateRepayments->pluck('loan.user.id')->toArray(),
+                'late_repayment_id' => $lateRepayments->pluck('id')->toArray(),
+                'total_late_repayments' => $lateRepayments->count(),
+            ]
+        );
         $this->info("Late repayment alert completed. Notified {$notifiedCount} users.");
     }
 
@@ -64,11 +77,15 @@ class LateRepaymentAlert extends Command
         $currency = 'USD';
 
         $message = <<<MSG
-⚠️ Late Repayment Alert
-Loan ID: #$loanId
-Amount Due: $currency $amount
-Original Due Date: $dueDate
+⚠️  Late Repayment Alert
+
+▫️ Loan ID: #$loanId
+▫️ Amount Due: $currency $amount
+▫️ Original Due Date: $dueDate
+
 Your repayment is overdue. Please make the payment as soon as possible to avoid penalties.
+
+If you have any questions or need assistance, please contact our support team.
 
 This is an automated reminder.
 MSG;
