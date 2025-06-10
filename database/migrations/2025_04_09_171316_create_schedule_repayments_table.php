@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->date('repayment_date');
             $table->decimal('emi_amount', 10, 2);
-            $table->enum('status', [0, 1,2])->default(0);
+            $table->enum('status', [0, 1, 2, 3])->default(0);
             $table->date('paid_date')->nullable();
             $table->unsignedBigInteger('loan_id')->nullable();
             $table->timestamps();

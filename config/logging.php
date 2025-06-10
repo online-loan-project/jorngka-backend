@@ -67,7 +67,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/daily.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -125,6 +125,42 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'repayment_log' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/repayment.log'),
+            'level' => 'info',
+        ],
+
+        'late_repayment' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/late_repayment.log'),
+            'level' => 'info',
+        ],
+
+        'nid_log' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/nid.log'),
+            'level' => 'info',
+        ],
+
+        'auth_log' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/auth.log'),
+            'level' => 'info',
+        ],
+
+        'otp_log' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/otp.log'),
+            'level' => 'info',
+        ],
+
+        'transaction_log' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/transaction.log'),
+            'level' => 'info',
         ],
 
     ],

@@ -11,7 +11,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', AdminAccessMiddleware::class
     Route::prefix('borrowers')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\BorrowerController::class, 'index'])->name('borrowers.index');
         Route::get('/{id}', [App\Http\Controllers\Admin\BorrowerController::class, 'show'])->name('borrowers.show');
-        Route::post('/status/{id}', [App\Http\Controllers\Admin\BorrowerController::class, 'borrowerStatus'])->name('borrowers.status');
+        Route::post('/status/{id}', [App\Http\Controllers\Admin\BorrowerController::class, 'borrowerStatus'])->middleware([VerifyPassword::class])->name('borrowers.status');
     });
 
   //group request loan routes
@@ -52,5 +52,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', AdminAccessMiddleware::class
         Route::get('/', [App\Http\Controllers\Admin\CreditController::class, 'index'])->name('credit.index');
         Route::post('/deposit', [App\Http\Controllers\Admin\CreditController::class, 'deposit'])->middleware([VerifyPassword::class])->name('credit.deposit');
         Route::post('/withdraw', [App\Http\Controllers\Admin\CreditController::class, 'withdraw'])->middleware([VerifyPassword::class])->name('credit.withdraw');
+    });
+
+    //activity log
+    Route::prefix('activity-log')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\ActivityController::class, 'index'])->name('activity-log.index');
+        Route::get('/{id}', [App\Http\Controllers\Admin\ActivityController::class, 'show'])->name('activity-log.show');
     });
 });

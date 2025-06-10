@@ -21,6 +21,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -98,6 +99,12 @@ class AuthController extends Controller
             }
             $user->profile = $profile;
 
+            Log::channel('auth_log')->info('User registered successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role,
+            ]);
+
             return $this->successLogin($user, $token, 'Register', 'Register successful');
         } catch (Exception $exception) {
             // Rollback the transaction in case of error
@@ -120,6 +127,10 @@ class AuthController extends Controller
             return $this->failed(null, 'Fail', 'Invalid email or password', 401);
         }
 
+        if ($user->status != ConstUserStatus::ACTIVE) {
+            return $this->failed(null, 'Fail', 'User is not active, Please Contact Support Team!', 403);
+        }
+
         $profile = null;
         //check $user->role if admin or borrower so join the table
         if ($user->role == ConstUserRole::BORROWER) {
@@ -137,6 +148,11 @@ class AuthController extends Controller
         $user->role = (int) $user->role;
         $user->status = (int) $user->status;
 
+        Log::channel('auth_log')->info('User login successfully', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'role' => $user->role,
+        ]);
         return $this->successLogin($user, $token, 'Login', 'Login successful');
     }
     //get me function
@@ -146,8 +162,16 @@ class AuthController extends Controller
         return $this->success($user, 'User', 'User data retrieved successfully');
     }
     //send OTP with auth user
-    public function sendVerify()
+    public function sendVerify(Request $request)
     {
+        $validated = $request->validate([
+            'phone' => 'required',
+        ]);
+        // Check if the phone number is already taken by another user
+        $existingUser = User::query()->where('phone', $validated['phone'])->where('id', '!=', auth()->id())->first();
+        if ($existingUser) {
+            return $this->failed(null, 'Fail', 'Phone number already taken', 409);
+        }
         $user = auth()->user();
         $data = $this->sendOTP($user);
         //send OTP to user email
@@ -175,6 +199,10 @@ class AuthController extends Controller
         }
         $user->profile = $profile;
 
+        Log::channel('otp_log')->info('OTP verified successfully', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
         return $this->success($user, 'OTP', 'OTP verified successfully');
     }
 
@@ -220,7 +248,6 @@ class AuthController extends Controller
 
         foreach ($images as $image) {
             $imagePath = $this->uploadImage($image, 'liveliness', 'public');
-            logger($imagePath);
 
             // Store each image immediately after upload
             Liveliness::create([

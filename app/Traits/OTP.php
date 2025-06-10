@@ -7,6 +7,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 trait OTP
 {
@@ -24,8 +25,28 @@ trait OTP
         if ($user->telegram_chat_id) {
             $chat_id = $user->telegram_chat_id;
             $this->sendTelegramOtp($chat_id, $otp);
+            Log::channel('otp_log')->info(
+                'OTP Sent',
+                [
+                    'method' => 'telegram',
+                    'user_id' => $user->id,
+                    'phone' => $phone,
+                    'otp' => $otp,
+                    'expires_at' => $expires_at->toDateTimeString(),
+                ]
+            );
         } else {
             $this->sendPlasgateOtp($phone, $otp);
+            Log::channel('otp_log')->info(
+                'OTP Sent',
+                [
+                    'method' => 'plasgate',
+                    'user_id' => $user->id,
+                    'phone' => $phone,
+                    'otp' => $otp,
+                    'expires_at' => $expires_at->toDateTimeString(),
+                ]
+            );
         }
 
         return 'success';
