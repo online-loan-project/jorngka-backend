@@ -13,14 +13,6 @@ trait OTP
 {
     public function sendOTP($user)
     {
-        Log::channel('otp_log')->info(
-            'Sending OTP',
-            [
-                'user_id' => $user->id,
-                'phone' => $user->phone,
-                'telegram_chat_id' => $user->telegram_chat_id
-            ]
-        );
         $otp = rand(1000, 9999);
         $expires_at = now()->addMinutes(5);
         $phone = ltrim($user->phone, '0');
@@ -101,12 +93,6 @@ Your one\-time password \(OTP\) is\:
 If you didn't request this\, please ignore this message or contact support immediately\.
 MSG;
 
-        Log::channel('otp_log')->info([
-                'method' => 'telegram',
-                'chat_id' => $chat_id,
-                'content' => $content,
-            ]
-        );
         $response = Http::post($telegramApiUrl, [
             'chat_id' => $chat_id,
             'text' => $content,
