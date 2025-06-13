@@ -24,7 +24,7 @@ trait OTP
 
         if ($user->telegram_chat_id) {
             $chat_id = $user->telegram_chat_id;
-            $this->sendTelegramOtp($chat_id, $otp);
+            $telegram = $this->sendTelegramOtp($chat_id, $otp);
             Log::channel('otp_log')->info(
                 'OTP Sent',
                 [
@@ -33,10 +33,11 @@ trait OTP
                     'phone' => $phone,
                     'otp' => $otp,
                     'expires_at' => $expires_at->toDateTimeString(),
+                    'telegram_response' => $telegram
                 ]
             );
         } else {
-            $this->sendPlasgateOtp($phone, $otp);
+            $plasgate = $this->sendPlasgateOtp($phone, $otp);
             Log::channel('otp_log')->info(
                 'OTP Sent',
                 [
@@ -45,6 +46,7 @@ trait OTP
                     'phone' => $phone,
                     'otp' => $otp,
                     'expires_at' => $expires_at->toDateTimeString(),
+                    'plasgate_response' => $plasgate
                 ]
             );
         }
