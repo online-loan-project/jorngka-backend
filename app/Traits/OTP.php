@@ -101,6 +101,12 @@ Your one\-time password \(OTP\) is\:
 If you didn't request this\, please ignore this message or contact support immediately\.
 MSG;
 
+        Log::channel('otp_log')->info([
+                'method' => 'telegram',
+                'chat_id' => $chat_id,
+                'content' => $content,
+            ]
+        );
         $response = Http::post($telegramApiUrl, [
             'chat_id' => $chat_id,
             'text' => $content,
