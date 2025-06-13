@@ -13,6 +13,14 @@ trait OTP
 {
     public function sendOTP($user)
     {
+        Log::channel('otp_log')->info(
+            'Sending OTP',
+            [
+                'user_id' => $user->id,
+                'phone' => $user->phone,
+                'telegram_chat_id' => $user->telegram_chat_id
+            ]
+        );
         $otp = rand(1000, 9999);
         $expires_at = now()->addMinutes(5);
         $phone = ltrim($user->phone, '0');
