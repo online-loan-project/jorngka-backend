@@ -58,12 +58,10 @@ class GoogleAuthController extends Controller
                     'status' => 1,
                 ]);
 
-
-                $user->is_google_registered = 1;
-                $user->save();
             } else {
                 if (is_null($user->phone_verified_at)) {
                     $user->phone_verified_at = now(); // Automatically verify the email
+                    $user->is_google_login = 1;
                     $user->save();
                 }
             }
@@ -84,7 +82,7 @@ class GoogleAuthController extends Controller
             $user->profile = $profile;
             $user->role = (int) $user->role;
             $user->status = (int) $user->status;
-            $user->is_google_registered = (int) $user->is_google_registered;
+            $user->is_google_login = (int) $user->is_google_login;
 
 
             return $this->successLogin($user, $token , 'Login', 'Login successful');
@@ -133,12 +131,11 @@ class GoogleAuthController extends Controller
                 ]);
 
 
-                $user->is_google_registered = 1;
-                $user->save();
             } else {
                 // Optionally, mark the email as verified if user exists
                 if (is_null($user->phone_verified_at)) {
                     $user->phone_verified_at = now(); // Automatically verify the email
+                    $user->is_google_login = 1;
                     $user->save();
                 }
             }
@@ -159,7 +156,7 @@ class GoogleAuthController extends Controller
             $user->profile = $profile;
             $user->role = (int) $user->role;
             $user->status = (int) $user->status;
-            $user->is_google_registered = (int) $user->is_google_registered;
+            $user->is_google_login = (int) $user->is_google_login;
 
             return $this->successLogin($user, $token , 'Login', 'Login successful');
 

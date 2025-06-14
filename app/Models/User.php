@@ -28,7 +28,7 @@ class User extends Authenticatable
         'face_verified_at',
         'role',
         'status',
-        'is_google_registered'
+        'is_google_login'
     ];
 
     /**
