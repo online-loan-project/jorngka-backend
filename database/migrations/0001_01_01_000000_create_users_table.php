@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamp('face_verified_at')->nullable();
             $table->enum('role', [1, 2])->default(2);
             $table->enum('status', [1, 0])->default(1);
-            $table->boolean('is_google_registered')->default(false);
+            $table->enum('is_google_registered', [1, 0])->default(0);
             $table->rememberToken();
             $table->timestamps();
         });
