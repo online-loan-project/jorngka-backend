@@ -59,7 +59,7 @@ class GoogleAuthController extends Controller
                 ]);
 
 
-                $user->is_google_registered = true;
+                $user->is_google_registered = 1;
                 $user->save();
             } else {
                 if (is_null($user->phone_verified_at)) {
@@ -133,7 +133,7 @@ class GoogleAuthController extends Controller
                 ]);
 
 
-                $user->is_google_registered = true;
+                $user->is_google_registered = 1;
                 $user->save();
             } else {
                 // Optionally, mark the email as verified if user exists
