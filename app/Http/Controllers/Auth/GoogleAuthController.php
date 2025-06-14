@@ -84,7 +84,7 @@ class GoogleAuthController extends Controller
             $user->profile = $profile;
             $user->role = (int) $user->role;
             $user->status = (int) $user->status;
-
+            $user->is_google_registered = (int) $user->is_google_registered;
 
 
             return $this->successLogin($user, $token , 'Login', 'Login successful');
@@ -159,6 +159,7 @@ class GoogleAuthController extends Controller
             $user->profile = $profile;
             $user->role = (int) $user->role;
             $user->status = (int) $user->status;
+            $user->is_google_registered = (int) $user->is_google_registered;
 
             return $this->successLogin($user, $token , 'Login', 'Login successful');
 
