@@ -60,7 +60,6 @@ class GoogleAuthController extends Controller
 
             } else {
                 if (is_null($user->phone_verified_at)) {
-                    $user->phone_verified_at = now(); // Automatically verify the email
                     $user->is_google_login = 1;
                     $user->save();
                 }
@@ -134,7 +133,6 @@ class GoogleAuthController extends Controller
             } else {
                 // Optionally, mark the email as verified if user exists
                 if (is_null($user->phone_verified_at)) {
-                    $user->phone_verified_at = now(); // Automatically verify the email
                     $user->is_google_login = 1;
                     $user->save();
                 }
