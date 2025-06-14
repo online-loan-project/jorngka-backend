@@ -57,6 +57,10 @@ class GoogleAuthController extends Controller
                     'score' => 50,
                     'status' => 1,
                 ]);
+
+
+                $user->is_google_registered = true;
+                $user->save();
             } else {
                 if (is_null($user->phone_verified_at)) {
                     $user->phone_verified_at = now(); // Automatically verify the email
@@ -127,6 +131,10 @@ class GoogleAuthController extends Controller
                     'score' => 50,
                     'status' => 1,
                 ]);
+
+
+                $user->is_google_registered = true;
+                $user->save();
             } else {
                 // Optionally, mark the email as verified if user exists
                 if (is_null($user->phone_verified_at)) {

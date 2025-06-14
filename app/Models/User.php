@@ -27,7 +27,8 @@ class User extends Authenticatable
         'telegram_chat_id',
         'face_verified_at',
         'role',
-        'status'
+        'status',
+        'is_google_registered'
     ];
 
     /**
