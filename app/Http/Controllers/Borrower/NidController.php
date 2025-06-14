@@ -98,9 +98,13 @@ MSG);
         }
 
         // match the extracted data with the borrower data only first_name, last_name
-        if (strtolower($data['first_name']) !== strtolower($borrowerData->first_name) || strtolower($data['last_name']) !== strtolower($borrowerData->last_name)) {
+        $firstNameMatch = strtolower($data['first_name']) === strtolower($borrowerData->first_name);
+        $lastNameMatch = strtolower($data['last_name']) === strtolower($borrowerData->last_name);
+        $swappedNameMatch = strtolower($data['first_name']) === strtolower($borrowerData->last_name)
+            && strtolower($data['last_name']) === strtolower($borrowerData->first_name);
 
-            return $this->failed(null ,'NID Error','NID information does not match with the borrower data.', 422);
+        if (!($firstNameMatch && $lastNameMatch) && !$swappedNameMatch) {
+            return $this->failed(null, 'NID Error', 'NID information does not match with the borrower data.', 422);
         }
 
         $image = $request->file('nid_image');
