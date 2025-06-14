@@ -289,6 +289,44 @@ class AuthController extends Controller
         }
     }
 
+
+    //update avatar
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'image' => 'required',
+        ]);
+
+        $user = auth()->user();
+        $profile = $this->getUserProfile($user);
+
+        if (!$profile) {
+            return $this->failed(null, 'Fail', 'Profile not found', 404);
+        }
+
+        $image = $request->file('image');
+        $imagePath = $this->uploadImage($image, 'borrower', 'public');
+
+        // Delete the old image if it exists
+        if ($profile->image && file_exists(public_path($profile->image))) {
+            unlink(public_path($profile->image));
+        }
+
+        $profile->update(['image' => $imagePath]);
+
+        // Re-fetch the profile after update
+        if ($user->role == ConstUserRole::BORROWER) {
+            $profile = Borrower::query()->where('user_id', $user->id)->first();
+        } elseif ($user->role == ConstUserRole::ADMIN) {
+            $profile = Admin::query()->where('user_id', $user->id)->first();
+        }
+
+        // Add profile to user
+        $user->profile = $profile;
+
+        return $this->success($user, 'Update Avatar', 'Avatar updated successfully');
+    }
+
     //update profile
     public function updateProfile(UpdateProfileRequest $request)
     {

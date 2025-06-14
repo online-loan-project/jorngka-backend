@@ -25,7 +25,7 @@ Route::post('telegram-chat-id', [AuthController::class, 'storeTelegramChatId'])-
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum')->name('logout');
 //change password
 Route::post('change-password', [AuthController::class, 'changePassword'])->middleware('auth:sanctum')->name('change-password');
-
+Route::post('update-avatar', [AuthController::class, 'updateAvatar'])->middleware('auth:sanctum')->name('change-avatar');
 
 // Handle the callback from Google
 Route::get('auth/callback/google', [GoogleAuthController::class, 'handleGoogleCallback'])->name('callback.google');
