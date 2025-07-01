@@ -84,4 +84,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Loan::class);
     }
+
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
+    }
 }
