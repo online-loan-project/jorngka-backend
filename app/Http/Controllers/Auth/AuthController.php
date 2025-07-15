@@ -71,7 +71,8 @@ class AuthController extends Controller
             ]);
 
             // Generate a token for the user
-            $token = $user->createToken('token_base_name')->plainTextToken;
+            $device = $request->header('User-Agent', 'unknown_device');
+            $token = $user->createToken($device)->plainTextToken;
 
             //give the user a default credit score
             CreditScore::query()->create([
@@ -141,7 +142,8 @@ class AuthController extends Controller
             $profile = Admin::query()->where('user_id', $user->id)->first();
         }
 
-        $token = $user->createToken('token_base_name')->plainTextToken;
+        $device = $request->header('User-Agent', 'unknown_device');
+        $token = $user->createToken($device)->plainTextToken;
 
         //add $profile to user
         $user->profile = $profile;
@@ -159,6 +161,25 @@ class AuthController extends Controller
     public function me()
     {
         $user = auth()->user();
+        if (!$user) {
+            return $this->failed(null, 'Fail', 'User not found', 404);
+        }
+
+        $profile = null;
+        //check $user->role if admin or borrower so join the table
+        if ($user->role == ConstUserRole::BORROWER) {
+            $profile = Borrower::query()->where('user_id', $user->id)->first();
+        }
+
+        if ($user->role == ConstUserRole::ADMIN) {
+            $profile = Admin::query()->where('user_id', $user->id)->first();
+        }
+
+        //add $profile to user
+        $user->profile = $profile;
+        $user->role = (int) $user->role;
+        $user->status = (int) $user->status;
+
         return $this->success($user, 'User', 'User data retrieved successfully');
     }
     //send OTP with auth user
@@ -289,44 +310,6 @@ class AuthController extends Controller
         }
     }
 
-
-    //update avatar
-    public function updateAvatar(Request $request)
-    {
-        $request->validate([
-            'image' => 'required',
-        ]);
-
-        $user = auth()->user();
-        $profile = $this->getUserProfile($user);
-
-        if (!$profile) {
-            return $this->failed(null, 'Fail', 'Profile not found', 404);
-        }
-
-        $image = $request->file('image');
-        $imagePath = $this->uploadImage($image, 'borrower', 'public');
-
-        // Delete the old image if it exists
-        if ($profile->image && file_exists(public_path($profile->image))) {
-            unlink(public_path($profile->image));
-        }
-
-        $profile->update(['image' => $imagePath]);
-
-        // Re-fetch the profile after update
-        if ($user->role == ConstUserRole::BORROWER) {
-            $profile = Borrower::query()->where('user_id', $user->id)->first();
-        } elseif ($user->role == ConstUserRole::ADMIN) {
-            $profile = Admin::query()->where('user_id', $user->id)->first();
-        }
-
-        // Add profile to user
-        $user->profile = $profile;
-
-        return $this->success($user, 'Update Avatar', 'Avatar updated successfully');
-    }
-
     //update profile
     public function updateProfile(UpdateProfileRequest $request)
     {
@@ -376,8 +359,8 @@ class AuthController extends Controller
         if ($user->role == ConstUserRole::ADMIN) {
             $profile = Admin::query()->where('user_id', $user->id)->first();
         }
-
-        $token = $user->createToken('token_base_name')->plainTextToken;
+        $device = $request->header('User-Agent', 'unknown_device');
+        $token = $user->createToken($device)->plainTextToken;
 
         //add $profile to user
         $user->profile = $profile;
