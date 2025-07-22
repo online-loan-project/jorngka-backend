@@ -81,6 +81,7 @@ class RequestLoanController extends Controller
         // Get paginated pending requests
         $requestLoan = RequestLoan::query()
             ->where('user_id', $user->id)
+            ->whereNotIn('status', [ConstRequestLoanStatus::APPROVED])
             ->paginate($perPage);
 
         // Get summary statistics

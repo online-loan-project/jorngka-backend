@@ -21,7 +21,7 @@ class LoanController extends Controller
         $userData = auth()->user();
 
         $loans = Loan::query()
-            ->with('user')
+            ->with(['user', 'requestLoan'])
             ->where('user_id', $userData->id)
             ->whereHas('user', function ($query) use ($search) {
                 $query->where('phone', 'like', "%$search%");
