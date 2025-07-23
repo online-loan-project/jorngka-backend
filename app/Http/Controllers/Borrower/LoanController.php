@@ -70,7 +70,7 @@ class LoanController extends Controller
     public function show($id)
     {
         $userData = auth()->user();
-        $loan = Loan::with('user')->where('user_id', $userData->id)->find($id);
+        $loan = Loan::with(['user', 'requestLoan'])->where('user_id', $userData->id)->find($id);
         if ($loan) {
             return $this->success($loan);
         }
