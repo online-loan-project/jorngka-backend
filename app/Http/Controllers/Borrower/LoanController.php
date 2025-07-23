@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Borrower;
 
 use App\Constants\ConstLoanRepaymentStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Mobile\LoanDetailResource;
 use App\Models\Loan;
 use App\Models\ScheduleRepayment;
 use App\Traits\ScheduleRepayments;
@@ -28,6 +29,11 @@ class LoanController extends Controller
             })
             ->where('status', $status)
             ->paginate($perPage);
+
+        $loans->getCollection()->transform(function ($loan) {
+            $loan->loan_amount = $loan->requestLoan->loan_amount ?? null;
+            return $loan;
+        });
 
         // Get all loan IDs for the summary calculations
         $loanIds = $loans->pluck('id')->toArray();
