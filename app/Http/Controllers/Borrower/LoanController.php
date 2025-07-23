@@ -30,11 +30,6 @@ class LoanController extends Controller
             ->where('status', $status)
             ->paginate($perPage);
 
-        $loans->getCollection()->transform(function ($loan) {
-            $loan->loan_amount = $loan->requestLoan->loan_amount ?? null;
-            return $loan;
-        });
-
         // Get all loan IDs for the summary calculations
         $loanIds = $loans->pluck('id')->toArray();
 
@@ -76,7 +71,10 @@ class LoanController extends Controller
     public function show($id)
     {
         $userData = auth()->user();
-        $loan = Loan::with(['user', 'scheduleRepayment'])->where('user_id', $userData->id)->find($id);
+        $loan = Loan::with(['user', 'scheduleRepayment', 'requestLoan', 'interestRate'])->where('user_id', $userData->id)->find($id);
+        $loan['loan_amount'] = $loan->requestLoan->loan_amount ?? null;
+        $loan['loan_interest_rate'] = $loan->interestRate->rate ?? null;
+
         if ($loan) {
             return $this->success($loan);
         }
