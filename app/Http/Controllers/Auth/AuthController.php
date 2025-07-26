@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Traits\BaseApiResponse;
 use App\Traits\OTP;
 use App\Traits\UploadImage;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -99,6 +100,9 @@ class AuthController extends Controller
                 $profile = Admin::query()->where('user_id', $user->id)->first();
             }
             $user->profile = $profile;
+            if ($profile && isset($profile->dob)) {
+                $profile->dob = Carbon::parse($profile->dob)->format('d-m-Y');
+            }
 
             Log::channel('auth_log')->info('User registered successfully', [
                 'user_id' => $user->id,
@@ -149,6 +153,9 @@ class AuthController extends Controller
         $user->profile = $profile;
         $user->role = (int) $user->role;
         $user->status = (int) $user->status;
+        if ($profile && isset($profile->dob)) {
+            $profile->dob = Carbon::parse($profile->dob)->format('d-m-Y');
+        }
 
         Log::channel('auth_log')->info('User login successfully', [
             'user_id' => $user->id,
@@ -179,6 +186,9 @@ class AuthController extends Controller
         $user->profile = $profile;
         $user->role = (int) $user->role;
         $user->status = (int) $user->status;
+        if ($profile && isset($profile->dob)) {
+            $profile->dob = Carbon::parse($profile->dob)->format('d-m-Y');
+        }
 
         return $this->success($user, 'User', 'User data retrieved successfully');
     }
@@ -219,6 +229,9 @@ class AuthController extends Controller
             $profile = Admin::query()->where('user_id', $user->id)->first();
         }
         $user->profile = $profile;
+        if ($profile && isset($profile->dob)) {
+            $profile->dob = Carbon::parse($profile->dob)->format('d-m-Y');
+        }
 
         Log::channel('otp_log')->info('OTP verified successfully', [
             'user_id' => $user->id,
@@ -340,7 +353,7 @@ class AuthController extends Controller
             'first_name' => $request->input('first_name'),
             'last_name' => $request->input('last_name'),
             'gender' => $request->input('gender'),
-            'dob' => $request->input('dob'),
+            'dob' => Carbon::parse($request->input('dob'))->format('Y-m-d'),
             'address' => $request->input('address'),
             'image' => $imagePath,
         ]);
@@ -366,6 +379,9 @@ class AuthController extends Controller
         $user->profile = $profile;
         $user->role = (int) $user->role;
         $user->status = (int) $user->status;
+        if ($profile && isset($profile->dob)) {
+            $profile->dob = Carbon::parse($profile->dob)->format('d-m-Y');
+        }
 
         return $this->successLogin($user, $token, 'Login', 'Login successful');
     }
